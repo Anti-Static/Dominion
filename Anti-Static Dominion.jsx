@@ -1,5 +1,5 @@
 // Anti-Static Dominion
-// v 1.0.0
+// v 1.0.1
 // by James Zelasko
 // This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
 // http://creativecommons.org/licenses/by-sa/4.0/
@@ -646,9 +646,79 @@ palette.onResizing = palette.onResize = function() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ==================================================================================================================================================================
 // Connections
 // ==================================================================================================================================================================
+
+
+var languageString = $.locale.substr(0,2);
+var supportedLanguages = ["en","fr","es","it","de","ru"];
+
+for(var i=0; i<supportedLanguages.length; i++){
+	var f=false;
+	if(supportedLanguages[i]==languageString){
+		f=true;
+	}
+}
+if(!f){
+	languageString="en";
+}
+
+var localSliderObj = {
+	en: "Slider",
+	fr: "Curseur",
+	es: "Deslizador",
+	it: "Cursore",
+	de: "Schieberegler",
+	ru: "Ползунок"
+};
+var localCheckboxObj = {
+	en: "Checkbox",
+	fr: "Case",
+	es: "Casilla de verificación",
+	it: "Casella",
+	de: "Kontrollkästchen",
+	ru: "Флажок"
+};
+var localDropDownObj = {
+	en: "Menu",
+	fr: "Menu",
+	es: "Menú",
+	it: "Menu",
+	de: "Menü",
+	ru: "Меню"
+};
+var localLayerObj = {
+	en: "Layer",
+	fr: "Calque",
+	es: "Capa",
+	it: "Livello",
+	de: "Ebene",
+	ru: "Слой"
+};
 
 
 CreateWindowButton.onClick = function() {
@@ -1024,6 +1094,90 @@ function createGradient(x) {
 function createNull(pos) {
 	if (app.project.activeItem.selectedLayers.length > 0) {
 		var sLayers = app.project.activeItem.selectedLayers;
+		var tt=null;
+		var dw=[];
+		for (var i = 0; i < sLayers.length; i++) {
+			var cl = sLayers[i];
+			if (isDominion(cl)) {
+				dw.push(cl);
+			}else{
+				tt = cl;
+			}
+		}
+		if(dw.length+1==sLayers.length && tt!=null || dw.length==sLayers.length){
+			for (var i = 0; i < sLayers.length; i++) {
+				var cl = sLayers[i];
+				if (isDominion(cl)) {
+					var n = app.project.activeItem.layers.addNull();
+					n.name = pos + "_" + cl.name;
+
+					var layerControl = n.property("ADBE Effect Parade").addProperty("ADBE Layer Control");
+					layerControl.property("ADBE Layer Control-0001").setValue(cl.index);
+					layerControl.name = "Layer Control";
+
+					var positionArray = ["TL", "TC", "TR", "CL", "C", "CR", "BL", "BC", "BR"];
+					var positionDropDown = n.property("ADBE Effect Parade").addProperty("ADBE Dropdown Control");
+					var temp = positionDropDown.property(1).setPropertyParameters(positionArray);
+					temp.propertyGroup(1).name = "Position";
+
+					if (pos == "TL") {
+						temp.setValue(1);
+					} else if (pos == "TC") {
+						temp.setValue(2);
+					} else if (pos == "TR") {
+						temp.setValue(3);
+					} else if (pos == "CL") {
+						temp.setValue(4);
+					} else if (pos == "C") {
+						temp.setValue(5);
+					} else if (pos == "CR") {
+						temp.setValue(6);
+					} else if (pos == "BL") {
+						temp.setValue(7);
+					} else if (pos == "BC") {
+						temp.setValue(8);
+					} else if (pos == "BR") {
+						temp.setValue(9);
+					}
+					var insetSliderN = n.Effects.addProperty("ADBE Slider Control");
+					insetSliderN.name = "Inset";
+					insetSliderN.property(1).setValue(Number(insetTextbox.text));
+
+	                if(cl.parent!=null){
+	    				n.parent = cl.parent;
+	                }else{
+	                    n.parent = cl;
+	                }
+
+					n.position.expression = '//Anti-Static Dominion\nvar t = effect("Layer Control")("'+localLayerObj[languageString]+'");\nvar c = effect("Position")("'+localDropDownObj[languageString]+'");\nvar s = t.content("Window").content("Window Rect").size;\nvar p = t.content("Window").content("Window Rect").position;\nvar xo = effect("Inset")("'+localSliderObj[languageString]+'");\nvar yo = xo;\nvar tp = value;\nif(c==1){\n\ttp = p;\n}else if(c==2){\n\txo = 0;\n\ttp = p+[s[0],0]-[s[0]/2, 0];\n}else if(c==3){\n\txo *= -1;\n\ttp = p+[s[0],0];\n}else if(c==4){\n\tyo = 0;\n\ttp = p+[0, s[1]/2];\n}else if(c==5){\n\txo = yo = 0;\n\ttp = p+[s[0],s[1]]/2;\n}else if(c==6){\n\txo *= -1;\n\tyo = 0;\n\ttp = p+[s[0],0]+[0, s[1]/2];\n}else if(c==7){\n\tyo *= -1;\n\ttp = p+[0, s[1]];\n}else if(c==8){\n\txo = 0;\n\tyo *= -1;\n\ttp = p+[0, s[1]]+[s[0]/2, 0];\n}else{\n\txo *= -1;\n\tyo *= -1;\n\ttp = p+[s[0], s[1]];\n}\ntp+[xo,yo];';
+
+	                n.label = nullLabelDropDown.selection.index;
+
+					if(tt!=null){
+						var nt = tt.duplicate();
+						nt.parent = n;
+						nt.transform.position.setValue([0,0]);
+						nt.selected = false;
+					}
+	                n.moveBefore(cl);
+	                n.selected = false;
+					cl.selected = true;
+				}
+			}
+	        for (var i = 0; i < sLayers.length; i++) {
+	            var cl = sLayers[i].selected=true;
+	        }
+		}else{
+			alert("Make sure only one non-Dominion window is selected.");
+		}
+	} else {
+		alert("Select at least one Dominion window.");
+	}
+}
+
+function createNullOLD(pos) {
+	if (app.project.activeItem.selectedLayers.length > 0) {
+		var sLayers = app.project.activeItem.selectedLayers;
 		for (var i = 0; i < sLayers.length; i++) {
 			var cl = sLayers[i];
 			if (isDominion(cl)) {
@@ -1067,7 +1221,7 @@ function createNull(pos) {
                     n.parent = cl;
                 }
 
-				n.position.expression = '//Anti-Static Dominion\nvar t = effect("Layer Control")("Layer");\nvar c = effect("Position")("Menu");\nvar s = t.content("Window").content("Window Rect").size;\nvar p = t.content("Window").content("Window Rect").position;\nvar xo = effect("Inset")("Slider");\nvar yo = xo;\nvar tp = value;\nif(c==1){\n\ttp = p;\n}else if(c==2){\n\txo = 0;\n\ttp = p+[s[0],0]-[s[0]/2, 0];\n}else if(c==3){\n\txo *= -1;\n\ttp = p+[s[0],0];\n}else if(c==4){\n\tyo = 0;\n\ttp = p+[0, s[1]/2];\n}else if(c==5){\n\txo = yo = 0;\n\ttp = p+[s[0],s[1]]/2;\n}else if(c==6){\n\txo *= -1;\n\tyo = 0;\n\ttp = p+[s[0],0]+[0, s[1]/2];\n}else if(c==7){\n\tyo *= -1;\n\ttp = p+[0, s[1]];\n}else if(c==8){\n\txo = 0;\n\tyo *= -1;\n\ttp = p+[0, s[1]]+[s[0]/2, 0];\n}else{\n\txo *= -1;\n\tyo *= -1;\n\ttp = p+[s[0], s[1]];\n}\ntp+[xo,yo];';
+				n.position.expression = '//Anti-Static Dominion\nvar t = effect("Layer Control")("'+localLayerObj[languageString]+'");\nvar c = effect("Position")("'+localDropDownObj[languageString]+'");\nvar s = t.content("Window").content("Window Rect").size;\nvar p = t.content("Window").content("Window Rect").position;\nvar xo = effect("Inset")("'+localSliderObj[languageString]+'");\nvar yo = xo;\nvar tp = value;\nif(c==1){\n\ttp = p;\n}else if(c==2){\n\txo = 0;\n\ttp = p+[s[0],0]-[s[0]/2, 0];\n}else if(c==3){\n\txo *= -1;\n\ttp = p+[s[0],0];\n}else if(c==4){\n\tyo = 0;\n\ttp = p+[0, s[1]/2];\n}else if(c==5){\n\txo = yo = 0;\n\ttp = p+[s[0],s[1]]/2;\n}else if(c==6){\n\txo *= -1;\n\tyo = 0;\n\ttp = p+[s[0],0]+[0, s[1]/2];\n}else if(c==7){\n\tyo *= -1;\n\ttp = p+[0, s[1]];\n}else if(c==8){\n\txo = 0;\n\tyo *= -1;\n\ttp = p+[0, s[1]]+[s[0]/2, 0];\n}else{\n\txo *= -1;\n\tyo *= -1;\n\ttp = p+[s[0], s[1]];\n}\ntp+[xo,yo];';
 
                 n.label = nullLabelDropDown.selection.index;
                 n.moveBefore(cl);
@@ -1113,7 +1267,7 @@ function fitTexture() {
 			}
 
 			l.parent = p;
-			l.transform.scale.expression = 'var t = thisLayer.parent;\nvar ts = t.content("Window").content("Window Rect").size;\nvar sx = (ts[0]/width)*100;\nvar sy = (ts[1]/height)*100;\nvar fx = 100;\nvar fy = 100;\nvar ch = effect("Maintain Aspect Ratio")("Checkbox");\nif(!ch.value){\n\tfx = sx;\n\tfy = sy;\n}else{\n\tif(sx>sy){\n\t\tfx = fy = sx;\n\t}else{\n\t\tfx = fy = sy;\n\t}\n}\n[fx,fy];';
+			l.transform.scale.expression = 'var t = thisLayer.parent;\nvar ts = t.content("Window").content("Window Rect").size;\nvar sx = (ts[0]/width)*100;\nvar sy = (ts[1]/height)*100;\nvar fx = 100;\nvar fy = 100;\nvar ch = effect("Maintain Aspect Ratio")("'+localCheckboxObj[languageString]+'");\nif(!ch.value){\n\tfx = sx;\n\tfy = sy;\n}else{\n\tif(sx>sy){\n\t\tfx = fy = sx;\n\t}else{\n\t\tfx = fy = sy;\n\t}\n}\n[fx,fy];';
 			l.transform.position.expression = '//Anti-Static Dominion\nvar t = thisLayer.parent;\nvar s = t.content("Window").content("Window Rect").size;\nvar p = t.content("Window").content("Window Rect").position;\nvar tp = p+[s[0],s[1]]/2;\ntp;'
 			if (maintainAspectCheck == null) {
 				maintainAspectCheck = l.Effects.addProperty("ADBE Checkbox Control");
@@ -1187,10 +1341,10 @@ function createWindow(p) {
 	percentageSlider.name = "Percentage";
 	percentageSlider.property(1).setValue(100 / Number(ChildrenTextbox.text));
 
-	var scaleString = '//Anti-Static Dominion\nvar tag = thisLayer.name.substr(0, 5);\nvar parentLayer;\nvar g1 = thisLayer.effect("Padding")("Slider");\nvar finalSize = value;\n\nif (tag == "[DOM]") {\n\tvar childrenArray = [];\n\tvar id = 0;\n\tif (thisLayer.hasParent) {\n\t\tparentLayer = thisLayer.parent;\n\t\tchildrenArray = findAllChildren(thisLayer);\n\n\t\tvar or = parentLayer.effect("Orientation")("Menu");\n\t\tvar p = parentLayer.effect("Padding")("Slider");\n\t\tvar ps = parentLayer.content("Window").content("Window Rect").size;\n\t\tvar valuePercentage = 1.0;\n\n\t\tif (childrenArray.length == 1) { //if there is only one child...\n\t\t\tif (or == 2) {\n\t\t\t\tfinalSize = ps - [p * 2, p * 2];\n\t\t\t} else {\n\t\t\t\tfinalSize = ps - [p * 2, p * 2];\n\t\t\t}\n\t\t} else { //if there is more than one child...\n\t\t\tif(!parentLayer.effect("Auto-Size Children")("Checkbox").value){\n\t\t\t\tif (parentLayer.effect("Prioritize Center")("Checkbox").value) {\n\t\t\t\t\tif (childrenArray.length % 2 == 0) {\n\t\t\t\t\t\t//Number of siblings is even.\n\t\t\t\t\t\tif (id == (childrenArray.length / 2) || id == (childrenArray.length / 2) + 1) {\n\t\t\t\t\t\t\t//these two are the center siblings\n\t\t\t\t\t\t\tvaluePercentage = effect("Percentage")("Slider") / 100;\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t//add the two center sibling sizes and divide up what is left over.\n\t\t\t\t\t\t\tvar padd = 0;\n\t\t\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\t\t\tvar c = childrenArray.length / 2;\n\t\t\t\t\t\t\t\tif (k + 1 == c || k + 1 == c + 1) {\n\t\t\t\t\t\t\t\t\tpadd += childrenArray[k][1];\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tvaluePercentage = ((100 - padd) / (childrenArray.length - 2)) / 100;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tif(childrenArray.length==2){\n\t\t\t\t\t\t\tvaluePercentage = .5;\n\t\t\t\t\t\t}\n\t\t\t\t\t} else {\n\t\t\t\t\t\t//Number of siblings is odd.\n\t\t\t\t\t\tif (id == Math.ceil(childrenArray.length / 2)) {\n\t\t\t\t\t\t\t//this is the center sibling\n\t\t\t\t\t\t\tvaluePercentage = effect("Percentage")("Slider") / 100;\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t//find center siblings size and divide up what is left over.\n\t\t\t\t\t\t\tvar padd = 0;\n\t\t\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\t\t\tif (k + 1 == Math.ceil(childrenArray.length / 2)) {\n\t\t\t\t\t\t\t\t\tpadd += childrenArray[k][1];\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tvaluePercentage = ((100 - padd) / (childrenArray.length - 1)) / 100;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t} else {\n\t\t\t\t\tif (id != childrenArray.length) { //if this is not the last sibling get its size from the its percentageSlider.\n\t\t\t\t\t\tvaluePercentage = effect("Percentage")("Slider") / 100;\n\t\t\t\t\t} else { //if this is the last sibling, give it whatever percentage is left over.\n\t\t\t\t\t\tvar padd = 0;\n\t\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\t\tif (k < (id - 1)) {\n\t\t\t\t\t\t\t\tpadd += childrenArray[k][1];\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t\tvaluePercentage = 1 - (padd / 100);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}else{\n\t\t\t\t//if Auto-Size Children is checked...\n\t\t\t\tvaluePercentage = 1/childrenArray.length;\n\t\t\t}\n\t\t\t//\n\t\t\t//\n\t\t\t//set final size...\n\t\t\tif (or == 2) {\n\t\t\t\t//[valuePercentage, valuePercentage];\n\t\t\t\tfinalSize = [ps[0] * valuePercentage, ps[1]] - [(p * (childrenArray.length + 1)) * valuePercentage, p * 2];\n\t\t\t} else {\n\t\t\t\t//[valuePercentage, valuePercentage];\n\t\t\t\t//valuePercentage = .25;\n\t\t\t\tfinalSize = [ps[0], ps[1] * valuePercentage] - [p * 2, (p * (childrenArray.length + 1)) * valuePercentage];\n\t\t\t}\n\t\t}\n\t} else {\n\t\tfinalSize = value;\n\t}\n} else if (tag == "[-M-]") {\n\tfinalSize = parent.content("Window").content("Window Rect").size;\n} else {\n\tfinalSize = value;\n}\n\nfunction findAllChildren(l){\n\tvar tempArray = [];\n\tfor (var i = 1; i <= thisComp.numLayers; i++) {\n\t\tvar cl = thisComp.layer(i);\n\t\tvar cltag = cl.name.substr(0, 5);\n\t\tif (cl.hasParent && cltag == "[DOM]") {\n\t\t\tif (cl.parent == l.parent) {\n\t\t\t\tif (cl.inPoint <= time && cl.outPoint > time) {\n\t\t\t\t\ttempArray.push([cl, cl.effect("Percentage")("Slider")]);\n\t\t\t\t\tif (thisLayer.name == cl.name) {\n\t\t\t\t\t\tid = tempArray.length;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn tempArray;\n}\n\n\nfinalSize;\n';
+	var scaleString = '//Anti-Static Dominion\nvar tag = thisLayer.name.substr(0, 5);\nvar parentLayer;\nvar g1 = thisLayer.effect("Padding")("'+localSliderObj[languageString]+'");\nvar finalSize = value;\n\nif (tag == "[DOM]") {\n\tvar childrenArray = [];\n\tvar id = 0;\n\tif (thisLayer.hasParent) {\n\t\tparentLayer = thisLayer.parent;\n\t\tchildrenArray = findAllChildren(thisLayer);\n\n\t\tvar or = parentLayer.effect("Orientation")("'+localDropDownObj[languageString]+'");\n\t\tvar p = parentLayer.effect("Padding")("'+localSliderObj[languageString]+'");\n\t\tvar ps = parentLayer.content("Window").content("Window Rect").size;\n\t\tvar valuePercentage = 1.0;\n\n\t\tif (childrenArray.length == 1) { //if there is only one child...\n\t\t\tif (or == 2) {\n\t\t\t\tfinalSize = ps - [p * 2, p * 2];\n\t\t\t} else {\n\t\t\t\tfinalSize = ps - [p * 2, p * 2];\n\t\t\t}\n\t\t} else { //if there is more than one child...\n\t\t\tif(!parentLayer.effect("Auto-Size Children")("'+localCheckboxObj[languageString]+'").value){\n\t\t\t\tif (parentLayer.effect("Prioritize Center")("'+localCheckboxObj[languageString]+'").value) {\n\t\t\t\t\tif (childrenArray.length % 2 == 0) {\n\t\t\t\t\t\t//Number of siblings is even.\n\t\t\t\t\t\tif (id == (childrenArray.length / 2) || id == (childrenArray.length / 2) + 1) {\n\t\t\t\t\t\t\t//these two are the center siblings\n\t\t\t\t\t\t\tvaluePercentage = effect("Percentage")("'+localSliderObj[languageString]+'") / 100;\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t//add the two center sibling sizes and divide up what is left over.\n\t\t\t\t\t\t\tvar padd = 0;\n\t\t\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\t\t\tvar c = childrenArray.length / 2;\n\t\t\t\t\t\t\t\tif (k + 1 == c || k + 1 == c + 1) {\n\t\t\t\t\t\t\t\t\tpadd += childrenArray[k][1];\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tvaluePercentage = ((100 - padd) / (childrenArray.length - 2)) / 100;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tif(childrenArray.length==2){\n\t\t\t\t\t\t\tvaluePercentage = .5;\n\t\t\t\t\t\t}\n\t\t\t\t\t} else {\n\t\t\t\t\t\t//Number of siblings is odd.\n\t\t\t\t\t\tif (id == Math.ceil(childrenArray.length / 2)) {\n\t\t\t\t\t\t\t//this is the center sibling\n\t\t\t\t\t\t\tvaluePercentage = effect("Percentage")("'+localSliderObj[languageString]+'") / 100;\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t//find center siblings size and divide up what is left over.\n\t\t\t\t\t\t\tvar padd = 0;\n\t\t\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\t\t\tif (k + 1 == Math.ceil(childrenArray.length / 2)) {\n\t\t\t\t\t\t\t\t\tpadd += childrenArray[k][1];\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\tvaluePercentage = ((100 - padd) / (childrenArray.length - 1)) / 100;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t} else {\n\t\t\t\t\tif (id != childrenArray.length) { //if this is not the last sibling get its size from the its percentageSlider.\n\t\t\t\t\t\tvaluePercentage = effect("Percentage")("'+localSliderObj[languageString]+'") / 100;\n\t\t\t\t\t} else { //if this is the last sibling, give it whatever percentage is left over.\n\t\t\t\t\t\tvar padd = 0;\n\t\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\t\tif (k < (id - 1)) {\n\t\t\t\t\t\t\t\tpadd += childrenArray[k][1];\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t\tvaluePercentage = 1 - (padd / 100);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}else{\n\t\t\t\t//if Auto-Size Children is checked...\n\t\t\t\tvaluePercentage = 1/childrenArray.length;\n\t\t\t}\n\t\t\t//\n\t\t\t//\n\t\t\t//set final size...\n\t\t\tif (or == 2) {\n\t\t\t\t//[valuePercentage, valuePercentage];\n\t\t\t\tfinalSize = [ps[0] * valuePercentage, ps[1]] - [(p * (childrenArray.length + 1)) * valuePercentage, p * 2];\n\t\t\t} else {\n\t\t\t\t//[valuePercentage, valuePercentage];\n\t\t\t\t//valuePercentage = .25;\n\t\t\t\tfinalSize = [ps[0], ps[1] * valuePercentage] - [p * 2, (p * (childrenArray.length + 1)) * valuePercentage];\n\t\t\t}\n\t\t}\n\t} else {\n\t\tfinalSize = value;\n\t}\n} else if (tag == "[-M-]") {\n\tfinalSize = parent.content("Window").content("Window Rect").size;\n} else {\n\tfinalSize = value;\n}\n\nfunction findAllChildren(l){\n\tvar tempArray = [];\n\tfor (var i = 1; i <= thisComp.numLayers; i++) {\n\t\tvar cl = thisComp.layer(i);\n\t\tvar cltag = cl.name.substr(0, 5);\n\t\tif (cl.hasParent && cltag == "[DOM]") {\n\t\t\tif (cl.parent == l.parent) {\n\t\t\t\tif (cl.inPoint <= time && cl.outPoint > time) {\n\t\t\t\t\ttempArray.push([cl, cl.effect("Percentage")("'+localSliderObj[languageString]+'")]);\n\t\t\t\t\tif (thisLayer.name == cl.name) {\n\t\t\t\t\t\tid = tempArray.length;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn tempArray;\n}\n\n\nfinalSize;\n';
 	myRect.property("ADBE Vector Rect Size").expression = scaleString;
 
-	var positionString = '//Anti-Static Dominion\nvar tag = thisLayer.name.substr(0, 5);\nvar parentLayer;\nvar finalPos = value;\n\nif (tag == "[DOM]") {\n\tvar childrenArray = [];\n\tvar id = 0;\n\tif (thisLayer.hasParent) {\n\t\tparentLayer = thisLayer.parent;\n\t\tchildrenArray = findAllChildren(thisLayer);\n\n\t\tvar ps = parentLayer.content("Window").content("Window Rect").size;\n\t\tvar pp = parentLayer.content("Window").content("Window Rect").position;\n\t\tvar or = parentLayer.effect("Orientation")("Menu");\n\t\tvar p = parentLayer.effect("Padding")("Slider");\n\t\tvar pw = p;\n\t\tvar ph = p;\n\n\t\tif(or == 2){\n\t\t\tif(ps[0] < (p*(childrenArray.length+1))){\n\t\t\t\tpw = p-(((p*(childrenArray.length+1))-ps[0])/(childrenArray.length+1));\n\t\t\t}\n\t\t\tif(ps[1] < p*2){\n\t\t\t\tph = p-(p-(ps[1]/2));\n\t\t\t}\n\t\t\t\n\t\t}else{\n\t\t\tif(ps[0] < p*2){\n\t\t\t\tpw = p-(p-(ps[0]/2));\n\t\t\t}\n\t\t\tif(ps[1] < (p*(childrenArray.length+1))){\n\t\t\t\tph = p-(((p*(childrenArray.length+1))-ps[1])/(childrenArray.length+1));\n\t\t\t}\n\t\t}\n\n\t\tvar TL = pp + [pw, ph];\n\t\tvar v = 0;\n\n\n\t\tif (childrenArray.length == 1) {\n\t\t\tfinalPos = pp + [pw, ph];\n\t\t} else {\n\t\t\t//if there is more than one child...\n\t\t\tif (or == 2) {\n\t\t\t\t//orientation COL\n\t\t\t\tif (id == 1) {\n\t\t\t\t\t//if this IS the first child...\n\t\t\t\t\tv = content("Window").content("Window Rect").size[0];\n\t\t\t\t\t//finalPos = TL + [(v + pw) * (id - 1), 0];\n\t\t\t\t\tfinalPos = TL;\n\t\t\t\t} else {\n\t\t\t\t\t//if this is not the first child...\n\t\t\t\t\tvar padd = 0;\n\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\tif (k < (id - 1)) {\n\t\t\t\t\t\t\tpadd += childrenArray[k][0].content("Window").content("Window Rect").size[0];\n\t\t\t\t\t\t\tpadd += pw;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\tfinalPos = TL + [padd, 0];\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\t//orientation ROW\n\t\t\t\tif (id == 1) {\n\t\t\t\t\t//if this IS the first child...\n\t\t\t\t\tv = content("Window").content("Window Rect").size[1];\n\t\t\t\t\t//finalPos = TL + [0, (v + ph) * (id - 1)];\n\t\t\t\t\tfinalPos = TL;\n\t\t\t\t} else {\n\t\t\t\t\t//if this is not the first child...\n\t\t\t\t\tvar padd = 0;\n\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\tif (k < (id - 1)) {\n\t\t\t\t\t\t\tpadd += childrenArray[k][0].content("Window").content("Window Rect").size[1];\n\t\t\t\t\t\t\tpadd += ph;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\tfinalPos = TL + [0, padd];\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t} else {\n\t\tfinalPos = content("Window").content("Window Rect").size/-2;\n\t}\n} else if (tag == "[-M-]") {\n\tif (thisLayer.hasParent) {\n\t\tfinalPos = parent.content("Window").content("Window Rect").position;\n\t}\n} else {\n\tfinalPos = value;\n}\n\nfunction findAllChildren(l){\n\tvar tempArray = [];\n\tfor (var i = 1; i <= thisComp.numLayers; i++) {\n\t\tvar cl = thisComp.layer(i);\n\t\tvar cltag = cl.name.substr(0, 5);\n\t\tif (cl.hasParent && cltag == "[DOM]") {\n\t\t\tif (cl.parent == l.parent) {\n\t\t\t\tif (cl.inPoint <= time && cl.outPoint > time) {\n\t\t\t\t\ttempArray.push([cl, cl.effect("Percentage")("Slider")]);\n\t\t\t\t\tif (thisLayer.name == cl.name) {\n\t\t\t\t\t\tid = tempArray.length;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn tempArray;\n}\n\n\n\nfinalPos;';
+	var positionString = '//Anti-Static Dominion\nvar tag = thisLayer.name.substr(0, 5);\nvar parentLayer;\nvar finalPos = value;\n\nif (tag == "[DOM]") {\n\tvar childrenArray = [];\n\tvar id = 0;\n\tif (thisLayer.hasParent) {\n\t\tparentLayer = thisLayer.parent;\n\t\tchildrenArray = findAllChildren(thisLayer);\n\n\t\tvar ps = parentLayer.content("Window").content("Window Rect").size;\n\t\tvar pp = parentLayer.content("Window").content("Window Rect").position;\n\t\tvar or = parentLayer.effect("Orientation")("'+localDropDownObj[languageString]+'");\n\t\tvar p = parentLayer.effect("Padding")("'+localSliderObj[languageString]+'");\n\t\tvar pw = p;\n\t\tvar ph = p;\n\n\t\tif(or == 2){\n\t\t\tif(ps[0] < (p*(childrenArray.length+1))){\n\t\t\t\tpw = p-(((p*(childrenArray.length+1))-ps[0])/(childrenArray.length+1));\n\t\t\t}\n\t\t\tif(ps[1] < p*2){\n\t\t\t\tph = p-(p-(ps[1]/2));\n\t\t\t}\n\t\t\t\n\t\t}else{\n\t\t\tif(ps[0] < p*2){\n\t\t\t\tpw = p-(p-(ps[0]/2));\n\t\t\t}\n\t\t\tif(ps[1] < (p*(childrenArray.length+1))){\n\t\t\t\tph = p-(((p*(childrenArray.length+1))-ps[1])/(childrenArray.length+1));\n\t\t\t}\n\t\t}\n\n\t\tvar TL = pp + [pw, ph];\n\t\tvar v = 0;\n\n\n\t\tif (childrenArray.length == 1) {\n\t\t\tfinalPos = pp + [pw, ph];\n\t\t} else {\n\t\t\t//if there is more than one child...\n\t\t\tif (or == 2) {\n\t\t\t\t//orientation COL\n\t\t\t\tif (id == 1) {\n\t\t\t\t\t//if this IS the first child...\n\t\t\t\t\tv = content("Window").content("Window Rect").size[0];\n\t\t\t\t\t//finalPos = TL + [(v + pw) * (id - 1), 0];\n\t\t\t\t\tfinalPos = TL;\n\t\t\t\t} else {\n\t\t\t\t\t//if this is not the first child...\n\t\t\t\t\tvar padd = 0;\n\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\tif (k < (id - 1)) {\n\t\t\t\t\t\t\tpadd += childrenArray[k][0].content("Window").content("Window Rect").size[0];\n\t\t\t\t\t\t\tpadd += pw;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\tfinalPos = TL + [padd, 0];\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\t//orientation ROW\n\t\t\t\tif (id == 1) {\n\t\t\t\t\t//if this IS the first child...\n\t\t\t\t\tv = content("Window").content("Window Rect").size[1];\n\t\t\t\t\t//finalPos = TL + [0, (v + ph) * (id - 1)];\n\t\t\t\t\tfinalPos = TL;\n\t\t\t\t} else {\n\t\t\t\t\t//if this is not the first child...\n\t\t\t\t\tvar padd = 0;\n\t\t\t\t\tfor (var k = 0; k < childrenArray.length; k++) {\n\t\t\t\t\t\tif (k < (id - 1)) {\n\t\t\t\t\t\t\tpadd += childrenArray[k][0].content("Window").content("Window Rect").size[1];\n\t\t\t\t\t\t\tpadd += ph;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\tfinalPos = TL + [0, padd];\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t} else {\n\t\tfinalPos = content("Window").content("Window Rect").size/-2;\n\t}\n} else if (tag == "[-M-]") {\n\tif (thisLayer.hasParent) {\n\t\tfinalPos = parent.content("Window").content("Window Rect").position;\n\t}\n} else {\n\tfinalPos = value;\n}\n\nfunction findAllChildren(l){\n\tvar tempArray = [];\n\tfor (var i = 1; i <= thisComp.numLayers; i++) {\n\t\tvar cl = thisComp.layer(i);\n\t\tvar cltag = cl.name.substr(0, 5);\n\t\tif (cl.hasParent && cltag == "[DOM]") {\n\t\t\tif (cl.parent == l.parent) {\n\t\t\t\tif (cl.inPoint <= time && cl.outPoint > time) {\n\t\t\t\t\ttempArray.push([cl, cl.effect("Percentage")("'+localSliderObj[languageString]+'")]);\n\t\t\t\t\tif (thisLayer.name == cl.name) {\n\t\t\t\t\t\tid = tempArray.length;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn tempArray;\n}\n\n\n\nfinalPos;';
 	myRect.property("ADBE Vector Rect Position").expression = positionString;
 
 	var anchorString = 'content("Window").content("Window Rect").size/-2';
@@ -1216,7 +1370,7 @@ function createWindow(p) {
 	inheritRoundnessCheck.name = "Inherit Roundness";
 	inheritRoundnessCheck.property(1).setValue(InheritRoundnessCheckbox.value);
 
-	var roundnessString = 'if(effect("Inherit Roundness")("Checkbox").value && thisLayer.hasParent){\n\tvar p = parent.effect("Padding")("Slider");\n\tparent.content("Window").content("Window Rect").roundness-p;\n}else{\n\tvalue;\n}';
+	var roundnessString = 'if(effect("Inherit Roundness")("'+localCheckboxObj[languageString]+'").value && thisLayer.hasParent){\n\tvar p = parent.effect("Padding")("'+localSliderObj[languageString]+'");\n\tparent.content("Window").content("Window Rect").roundness-p;\n}else{\n\tvalue;\n}';
 	shapeLayer.content("Window").content("Window Rect").roundness.expression = roundnessString;
 
 	var opacityString = '';
