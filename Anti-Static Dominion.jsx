@@ -1,8 +1,10 @@
 // Anti-Static Dominion
-// v 1.0.2
 // by James Zelasko
 // This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
 // http://creativecommons.org/licenses/by-sa/4.0/
+var versionNumber = "1.0.3";
+
+
 
 
 
@@ -537,23 +539,37 @@ palette.onResizing = palette.onResize = function () { this.layout.resize(); }
 
 
 
+
+
+
+
+
+
+
+
+
+
 // ==================================================================================================================================================================
 // Connections
 // ==================================================================================================================================================================
-scriptName.text = "Anti-Static Dominion ver 1.0.2";
+
 
 var languageString = $.locale.substr(0, 2).toLowerCase();
 var supportedLanguages = ["en", "fr", "es", "it", "de", "ru"];
+
+scriptName.text = "Anti-Static Dominion ver "+versionNumber+" "+languageString;
 
 for (var i = 0; i < supportedLanguages.length; i++) {
 	var f = false;
 	if (supportedLanguages[i] == languageString) {
 		f = true;
+		break;
 	}
 }
 if (!f) {
 	languageString = "en";
 }
+
 
 var localSliderObj = {
 	en: "Slider",
